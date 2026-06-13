@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>て-форма — 3 группы глаголов</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f1a;
+  --card: #1c1f30;
+  --border: #272b3f;
+  --text: #f0eeff;
+  --muted: #7b7fa3;
+  --g1: #ff8c42;      /* group 1 — orange */
+  --g2: #7c6aff;      /* group 2 — violet */
+  --g3: #00c9b1;      /* group 3 — teal */
+  --mix: #ff6f91;     /* all mode — pink */
+  --gold: #ffc84a;
+  --correct: #06d6a0;
+  --wrong: #ff4f72;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Nunito', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+/* BLOBS */
+.blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.13; }
+.blob1 { width: 500px; height: 500px; background: var(--g1); top: -150px; right: -100px; animation: b1 17s ease-in-out infinite; }
+.blob2 { width: 400px; height: 400px; background: var(--g2); bottom: -100px; left: -80px; animation: b2 21s ease-in-out infinite; }
+.blob3 { width: 280px; height: 280px; background: var(--g3); top: 45%; left: 48%; transform: translate(-50%,-50%); animation: b3 13s ease-in-out infinite; }
+@keyframes b1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-28px,22px)} }
+@keyframes b2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(22px,-18px)} }
+@keyframes b3 { 0%,100%{transform:translate(-50%,-50%)scale(1)} 50%{transform:translate(-50%,-50%)scale(1.18)} }
+
+/* RAIN */
+.te-rain { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; opacity: 0.03; }
+.te-rain span { position: absolute; font-family: 'Noto Sans JP', sans-serif; color: #fff; animation: tfloat linear infinite; }
+@keyframes tfloat { from{transform:translateY(-60px)} to{transform:translateY(110vh)} }
+
+#app { position: relative; z-index: 1; }
+.screen { display: none; flex-direction: column; align-items: center; min-height: 100vh; padding: 32px 20px 60px; animation: fadeUp .45s both; }
+.screen.active { display: flex; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
+/* ═══════════ MENU ═══════════ */
+#menu { justify-content: flex-start; padding-top: 48px; gap: 0; text-align: center; }
+
+.logo-big { font-family: 'Noto Sans JP', sans-serif; font-size: 76px; font-weight: 900; line-height: 1;
+  background: linear-gradient(135deg, var(--g1), var(--g2), var(--g3));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 30px rgba(124,106,255,.4)); display: block; }
+.logo-sub { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin-top: 6px; font-weight: 700; }
+.tagline { font-size: 14px; color: var(--muted); margin: 22px 0 36px; line-height: 1.9; }
+.tagline b { color: var(--text); }
+
+/* RULES BLOCK */
+.rules-wrap { width: 100%; max-width: 620px; margin-bottom: 36px; display: flex; flex-direction: column; gap: 14px; }
+
+.rule-block {
+  background: var(--card); border: 2px solid var(--border); border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .25s;
+}
+.rule-block.open { border-color: var(--gc, var(--border)); }
+.rule-head {
+  display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+  user-select: none;
+}
+.rule-head-icon {
+  font-family: 'Noto Sans JP', sans-serif; font-size: 28px; font-weight: 900;
+  color: var(--gc); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--gc) 60%, transparent));
+  flex-shrink: 0; width: 40px; text-align: center;
+}
+.rule-head-info { flex: 1; text-align: left; }
+.rule-head-title { font-size: 14px; font-weight: 800; color: var(--gc); }
+.rule-head-sub { font-size: 12px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.rule-chevron { color: var(--muted); font-size: 13px; transition: transform .25s; }
+.rule-block.open .rule-chevron { transform: rotate(180deg); }
+
+.rule-body { display: none; padding: 0 20px 18px; text-align: left; }
+.rule-block.open .rule-body { display: block; }
+
+.sub-rule { padding: 9px 0; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 12px; }
+.sub-rule:last-child { border-bottom: none; padding-bottom: 0; }
+.sr-tag {
+  flex-shrink: 0; min-width: 72px; text-align: center; padding: 3px 8px;
+  border-radius: 8px; font-size: 11px; font-weight: 800; letter-spacing: .05em;
+  border: 1px solid color-mix(in srgb, var(--gc) 30%, transparent);
+  background: color-mix(in srgb, var(--gc) 10%, transparent);
+  color: var(--gc);
+}
+.sr-ex { font-family: 'Noto Sans JP', sans-serif; font-size: 13px; color: var(--muted); line-height: 1.8; }
+.sr-ex b { color: var(--correct); }
+
+/* MODE CARDS */
+.mode-wrap { width: 100%; max-width: 620px; }
+.mode-title { font-size: 11px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mode-grid .span2 { grid-column: span 2; }
+
+.mode-card {
+  border: 2px solid var(--border); border-radius: 18px; padding: 22px 16px 18px;
+  cursor: pointer; background: var(--card);
+  transition: all .25s cubic-bezier(.34,1.56,.64,1);
+  display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+}
+.mode-card:hover { transform: translateY(-5px) scale(1.03); border-color: var(--mc); box-shadow: 0 8px 28px color-mix(in srgb, var(--mc) 20%, transparent); }
+.mc-icon { font-family: 'Noto Sans JP', sans-serif; font-size: 34px; font-weight: 900; line-height: 1; color: var(--mc); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--mc) 50%, transparent)); }
+.mc-name { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--mc); }
+.mc-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.mc-badge {
+  font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 50px;
+  background: color-mix(in srgb, var(--mc) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mc) 28%, transparent);
+  color: var(--mc);
+}
+
+/* ═══════════ QUIZ ═══════════ */
+#quiz { justify-content: flex-start; padding-top: 0; gap: 0; }
+
+.topbar { width: 100%; max-width: 580px; display: flex; align-items: center; justify-content: space-between; padding: 24px 0 26px; }
+.back-btn { background: none; border: 1.5px solid var(--border); color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 50px; cursor: pointer; transition: all .2s; }
+.back-btn:hover { border-color: var(--muted); color: var(--text); }
+.score-pill { display: flex; align-items: center; gap: 5px; background: color-mix(in srgb, var(--gold) 10%, var(--card)); border: 1.5px solid color-mix(in srgb, var(--gold) 25%, transparent); border-radius: 50px; padding: 5px 14px; font-size: 14px; font-weight: 800; color: var(--gold); }
+.score-pill::before { content: '★'; }
+.prog-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.prog-nums { font-size: 12px; color: var(--muted); font-weight: 700; }
+.pbar-bg { width: 130px; height: 5px; background: var(--border); border-radius: 10px; overflow: hidden; }
+.pbar-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--qc1, var(--g1)), var(--qc2, var(--g2))); transition: width .5s cubic-bezier(.4,0,.2,1); }
+
+/* VERB CARD */
+.verb-card {
+  width: 100%; max-width: 580px; border: 2px solid var(--border); border-radius: 26px;
+  background: var(--card); padding: 40px 32px 32px; margin-bottom: 22px;
+  text-align: center; position: relative; overflow: hidden;
+}
+.verb-card::before { content: 'て'; position: absolute; right: 14px; top: 6px; font-family: 'Noto Sans JP', sans-serif; font-weight: 900; font-size: 110px; color: rgba(255,255,255,.024); pointer-events: none; line-height: 1; }
+
+.vtype-tag { display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; padding: 4px 14px; border-radius: 50px; margin-bottom: 18px; border: 1px solid; }
+
+.verb-dict { font-family: 'Noto Sans JP', sans-serif; font-size: 68px; font-weight: 900; line-height: 1; letter-spacing: .04em; }
+.verb-dict.pop { animation: popIn .3s cubic-bezier(.34,1.56,.64,1); }
+@keyframes popIn { 0%{transform:scale(.65)rotate(-4deg);opacity:0} 100%{transform:scale(1)rotate(0);opacity:1} }
+
+.verb-mean { font-size: 14px; color: var(--muted); margin-top: 12px; font-weight: 600; }
+.task-row { font-size: 14px; color: var(--muted); margin-top: 16px; font-weight: 600; }
+.task-row span { font-family: 'Noto Sans JP', sans-serif; font-size: 17px; color: var(--text); font-weight: 700; }
+
+/* OPTIONS */
+.opts-wrap { width: 100%; max-width: 580px; }
+.opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 14px; }
+.opt-btn { padding: 18px 12px; border-radius: 16px; border: 2px solid var(--border); background: var(--card); color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 22px; font-weight: 700; cursor: pointer; transition: all .18s cubic-bezier(.34,1.56,.64,1); }
+.opt-btn:hover:not(:disabled) { border-color: var(--qc1,var(--g2)); transform: translateY(-3px) scale(1.03); box-shadow: 0 6px 20px rgba(0,0,0,.3); background: color-mix(in srgb, var(--qc1,var(--g2)) 10%, var(--card)); }
+.opt-btn.correct { border-color: var(--correct); background: color-mix(in srgb, var(--correct) 14%, var(--card)); color: var(--correct); animation: cPop .35s cubic-bezier(.34,1.56,.64,1); }
+@keyframes cPop { 0%{transform:scale(1)} 50%{transform:scale(1.08)} 100%{transform:scale(1)} }
+.opt-btn.wrong { border-color: var(--wrong); background: color-mix(in srgb, var(--wrong) 12%, var(--card)); color: var(--wrong); animation: shake .35s ease; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+.opt-btn.reveal { border-color: var(--correct); background: color-mix(in srgb, var(--correct) 10%, var(--card)); color: var(--correct); }
+.opt-btn:disabled { cursor: default; }
+
+.fb-box { border-radius: 14px; padding: 13px 18px; font-size: 14px; font-weight: 700; line-height: 1.7; text-align: center; opacity: 0; transform: translateY(8px); transition: all .3s; min-height: 48px; }
+.fb-box.show { opacity: 1; transform: translateY(0); }
+.fb-box.ok { background: color-mix(in srgb, var(--correct) 10%, var(--card)); color: var(--correct); border: 1.5px solid color-mix(in srgb, var(--correct) 28%, transparent); }
+.fb-box.no { background: color-mix(in srgb, var(--wrong) 10%, var(--card)); color: var(--wrong); border: 1.5px solid color-mix(in srgb, var(--wrong) 28%, transparent); }
+.fb-tip { font-size: 12px; color: var(--muted); font-weight: 600; margin-top: 5px; font-family: 'Nunito', sans-serif; }
+
+.next-btn { margin-top: 14px; padding: 14px 48px; border-radius: 50px; border: none; background: linear-gradient(135deg, var(--qc1,var(--g2)), var(--qc2,var(--mix))); color: #fff; font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 800; cursor: pointer; opacity: 0; transform: translateY(10px); transition: all .3s cubic-bezier(.34,1.56,.64,1); box-shadow: 0 4px 20px rgba(124,106,255,.3); display: block; width: 100%; }
+.next-btn.show { opacity: 1; transform: translateY(0); }
+.next-btn:hover { transform: translateY(-3px) scale(1.02); }
+
+/* ═══════════ RESULTS ═══════════ */
+#results { text-align: center; gap: 18px; justify-content: center; }
+.trophy-big { font-size: 80px; animation: bounceIn .55s cubic-bezier(.34,1.56,.64,1); }
+@keyframes bounceIn { 0%{transform:scale(0)rotate(-18deg)} 100%{transform:scale(1)rotate(0)} }
+.res-title { font-size: 30px; font-weight: 900; background: linear-gradient(135deg, var(--gold), var(--mix)); -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+.res-score { font-size: 60px; font-weight: 900; line-height: 1; }
+.res-score span { font-size: 22px; color: var(--muted); font-weight: 600; }
+.res-stats { display: flex; gap: 20px; background: var(--card); border: 2px solid var(--border); border-radius: 20px; padding: 20px 28px; }
+.stat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.sv { font-size: 26px; font-weight: 900; }
+.sv.g{color:var(--correct)} .sv.r{color:var(--wrong)} .sv.b{color:var(--g2)}
+.sl { font-size: 10px; color: var(--muted); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.res-msg { font-size: 14px; color: var(--muted); max-width: 360px; line-height: 1.8; }
+
+.wrong-list { width: 100%; max-width: 520px; text-align: left; }
+.wl-title { font-size: 11px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.wl-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.wl-item { background: var(--card); border: 1.5px solid color-mix(in srgb, var(--wrong) 28%, var(--border)); border-radius: 10px; padding: 6px 14px; display: flex; align-items: center; gap: 8px; }
+.wi-d { font-family: 'Noto Sans JP', sans-serif; font-size: 17px; color: var(--wrong); }
+.wi-a { color: var(--muted); font-size: 12px; }
+.wi-t { font-family: 'Noto Sans JP', sans-serif; font-size: 17px; color: var(--correct); }
+.wi-m { font-size: 11px; color: var(--muted); }
+
+.btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.btn-p { padding: 13px 34px; border-radius: 50px; border: none; background: linear-gradient(135deg, var(--g2), var(--mix)); color: #fff; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: all .2s; box-shadow: 0 4px 18px rgba(124,106,255,.3); }
+.btn-p:hover { transform: translateY(-3px); }
+.btn-s { padding: 13px 34px; border-radius: 50px; border: 2px solid var(--border); background: var(--card); color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: all .2s; }
+.btn-s:hover { border-color: var(--muted); color: var(--text); }
+
+@media(max-width:500px){
+  .mode-grid{grid-template-columns:1fr;} .mode-grid .span2{grid-column:span 1;}
+  .verb-dict{font-size:52px;} .opt-btn{font-size:19px;padding:15px 10px;}
+  .res-stats{gap:14px;padding:16px 18px;}
+}
+</style>
+</head>
+<body>
+
+<div class="blobs"><div class="blob blob1"></div><div class="blob blob2"></div><div class="blob blob3"></div></div>
+<div class="te-rain" id="teRain"></div>
+
+<div id="app">
+
+<!-- ══════ MENU ══════ -->
+<div class="screen active" id="menu">
+  <span class="logo-big">〜て</span>
+  <div class="logo-sub">Te-form Drill · 3 группы глаголов · JLPT N5</div>
+
+  <p class="tagline">Тренируем <b>て-форму</b> всех трёх групп.<br>Только хирагана, только простые глаголы.</p>
+
+  <!-- RULES -->
+  <div class="rules-wrap">
+
+    <!-- GROUP 1 -->
+    <div class="rule-block" style="--gc:var(--g1)" onclick="toggleRule(this)">
+      <div class="rule-head">
+        <div class="rule-head-icon">う</div>
+        <div class="rule-head-info">
+          <div class="rule-head-title">1 группа — う-глаголы (godan)</div>
+          <div class="rule-head-sub">окончание меняется по правилу</div>
+        </div>
+        <div class="rule-chevron">▼</div>
+      </div>
+      <div class="rule-body">
+        <div class="sub-rule"><div class="sr-tag">く → いて</div><div class="sr-ex">かく → か<b>いて</b> &nbsp;·&nbsp; きく → き<b>いて</b></div></div>
+        <div class="sub-rule"><div class="sr-tag">ぐ → いで</div><div class="sr-ex">およぐ → およ<b>いで</b> &nbsp;·&nbsp; いそぐ → いそ<b>いで</b></div></div>
+        <div class="sub-rule"><div class="sr-tag">す → して</div><div class="sr-ex">はなす → はな<b>して</b> &nbsp;·&nbsp; かす → か<b>して</b></div></div>
+        <div class="sub-rule"><div class="sr-tag">む/ぬ/ぶ → んで</div><div class="sr-ex">のむ → の<b>んで</b> &nbsp;·&nbsp; あそぶ → あそ<b>んで</b></div></div>
+        <div class="sub-rule"><div class="sr-tag">つ/る/う → って</div><div class="sr-ex">まつ → ま<b>って</b> &nbsp;·&nbsp; かえる → かえ<b>って</b> &nbsp;·&nbsp; かう → か<b>って</b></div></div>
+        <div class="sub-rule"><div class="sr-tag">⚠ いく</div><div class="sr-ex">いく → い<b>って</b> (исключение из く-правила!)</div></div>
+      </div>
+    </div>
+
+    <!-- GROUP 2 -->
+    <div class="rule-block" style="--gc:var(--g2)" onclick="toggleRule(this)">
+      <div class="rule-head">
+        <div class="rule-head-icon">る</div>
+        <div class="rule-head-info">
+          <div class="rule-head-title">2 группа — る-глаголы (ichidan)</div>
+          <div class="rule-head-sub">просто убираем る и добавляем て</div>
+        </div>
+        <div class="rule-chevron">▼</div>
+      </div>
+      <div class="rule-body">
+        <div class="sub-rule"><div class="sr-tag">る → て</div><div class="sr-ex">たべる → たべ<b>て</b> &nbsp;·&nbsp; みる → み<b>て</b> &nbsp;·&nbsp; おきる → おき<b>て</b> &nbsp;·&nbsp; ねる → ね<b>て</b></div></div>
+      </div>
+    </div>
+
+    <!-- GROUP 3 -->
+    <div class="rule-block" style="--gc:var(--g3)" onclick="toggleRule(this)">
+      <div class="rule-head">
+        <div class="rule-head-icon">⚡</div>
+        <div class="rule-head-info">
+          <div class="rule-head-title">3 группа — неправильные</div>
+          <div class="rule-head-sub">только два глагола, просто запомни</div>
+        </div>
+        <div class="rule-chevron">▼</div>
+      </div>
+      <div class="rule-body">
+        <div class="sub-rule"><div class="sr-tag">する</div><div class="sr-ex">する → <b>して</b> &nbsp;·&nbsp; べんきょうする → べんきょう<b>して</b></div></div>
+        <div class="sub-rule"><div class="sr-tag">くる</div><div class="sr-ex">くる → <b>きて</b></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODE CARDS -->
+  <div class="mode-wrap">
+    <div class="mode-title">Выбери режим:</div>
+    <div class="mode-grid">
+      <div class="mode-card" style="--mc:var(--g1)" onclick="startQuiz('g1')">
+        <div class="mc-icon">う</div>
+        <div class="mc-badge">1 группа</div>
+        <div class="mc-name">う-глаголы</div>
+        <div class="mc-desc">く·ぐ·す·む·つ·る·う<br>7 правил</div>
+      </div>
+      <div class="mode-card" style="--mc:var(--g2)" onclick="startQuiz('g2')">
+        <div class="mc-icon">る</div>
+        <div class="mc-badge">2 группа</div>
+        <div class="mc-name">る-глаголы</div>
+        <div class="mc-desc">る → て<br>самое простое</div>
+      </div>
+      <div class="mode-card" style="--mc:var(--g3)" onclick="startQuiz('g3')">
+        <div class="mc-icon">⚡</div>
+        <div class="mc-badge">3 группа</div>
+        <div class="mc-name">Неправильные</div>
+        <div class="mc-desc">する・くる<br>запомни раз и навсегда</div>
+      </div>
+      <div class="mode-card span2" style="--mc:var(--mix)" onclick="startQuiz('all')">
+        <div class="mc-icon">全</div>
+        <div class="mc-badge">Все группы</div>
+        <div class="mc-name">Все вместе</div>
+        <div class="mc-desc">1 + 2 + 3 группа — настоящая тренировка</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ QUIZ ══════ -->
+<div class="screen" id="quiz">
+  <div class="topbar">
+    <button class="back-btn" onclick="goMenu()">← Назад</button>
+    <div class="score-pill" id="scorePill">0</div>
+    <div class="prog-wrap">
+      <div class="prog-nums" id="pNums">1 / 15</div>
+      <div class="pbar-bg"><div class="pbar-fill" id="pFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="verb-card">
+    <div class="vtype-tag" id="typeTag">1 группа</div>
+    <div class="verb-dict" id="verbChar">かく</div>
+    <div class="verb-mean" id="verbMean">писать</div>
+    <div class="task-row">て-форма = <span id="taskSpan">？</span></div>
+  </div>
+
+  <div class="opts-wrap">
+    <div class="opts-grid" id="optsGrid"></div>
+    <div class="fb-box" id="fbBox"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQ()">Следующий →</button>
+  </div>
+</div>
+
+<!-- ══════ RESULTS ══════ -->
+<div class="screen" id="results">
+  <div class="trophy-big" id="trophy">🏆</div>
+  <div class="res-title" id="resTitle">Отлично!</div>
+  <div class="res-score" id="resScore">0 <span>/ 0</span></div>
+  <div class="res-stats">
+    <div class="stat"><div class="sv g" id="rOk">0</div><div class="sl">Верно</div></div>
+    <div class="stat"><div class="sv r" id="rBad">0</div><div class="sl">Ошибки</div></div>
+    <div class="stat"><div class="sv b" id="rAcc">0%</div><div class="sl">Точность</div></div>
+  </div>
+  <p class="res-msg" id="resMsg"></p>
+  <div class="wrong-list" id="wrongList"></div>
+  <div class="btn-row">
+    <button class="btn-p" onclick="retryQuiz()">Ещё раз</button>
+    <button class="btn-s" onclick="goMenu()">В меню</button>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────
+// group 1 (u-verbs / godan)
+const G1 = [
+  // く → いて
+  {d:'かく',   t:'かいて',   m:'писать',            g:1, rule:'く → いて'},
+  {d:'きく',   t:'きいて',   m:'слушать / спрашивать', g:1, rule:'く → いて'},
+  {d:'あるく',  t:'あるいて', m:'ходить пешком',     g:1, rule:'く → いて'},
+  {d:'はたらく',t:'はたらいて',m:'работать',          g:1, rule:'く → いて'},
+  // ぐ → いで
+  {d:'およぐ', t:'およいで', m:'плавать',            g:1, rule:'ぐ → いで'},
+  {d:'いそぐ', t:'いそいで', m:'торопиться',         g:1, rule:'ぐ → いで'},
+  // す → して
+  {d:'はなす', t:'はなして', m:'говорить / рассказывать', g:1, rule:'す → して'},
+  {d:'かす',   t:'かして',   m:'давать взаймы',      g:1, rule:'す → して'},
+  {d:'けす',   t:'けして',   m:'выключать / стирать', g:1, rule:'す → して'},
+  {d:'はなす', t:'はなして', m:'отпускать / говорить', g:1, rule:'す → して'},
+  // む → んで
+  {d:'のむ',   t:'のんで',   m:'пить',               g:1, rule:'む → んで'},
+  {d:'よむ',   t:'よんで',   m:'читать',             g:1, rule:'む → んで'},
+  {d:'やすむ', t:'やすんで', m:'отдыхать',           g:1, rule:'む → んで'},
+  {d:'すむ',   t:'すんで',   m:'жить / проживать',   g:1, rule:'む → んで'},
+  // ぶ → んで
+  {d:'あそぶ', t:'あそんで', m:'играть / веселиться', g:1, rule:'ぶ → んで'},
+  {d:'よぶ',   t:'よんで',   m:'звать / называть',   g:1, rule:'ぶ → んで'},
+  // ぬ → んで
+  {d:'しぬ',   t:'しんで',   m:'умирать',            g:1, rule:'ぬ → んで'},
+  // つ → って
+  {d:'まつ',   t:'まって',   m:'ждать',              g:1, rule:'つ → って'},
+  {d:'もつ',   t:'もって',   m:'держать / иметь',    g:1, rule:'つ → って'},
+  {d:'たつ',   t:'たって',   m:'стоять / вставать',  g:1, rule:'つ → って'},
+  // る → って (godan!)
+  {d:'かえる', t:'かえって', m:'возвращаться домой', g:1, rule:'る(1гр) → って'},
+  {d:'のる',   t:'のって',   m:'ехать / садиться (в транспорт)', g:1, rule:'る(1гр) → って'},
+  {d:'はいる', t:'はいって', m:'входить',            g:1, rule:'る(1гр) → って'},
+  {d:'しる',   t:'しって',   m:'знать',              g:1, rule:'る(1гр) → って'},
+  {d:'きる',   t:'きって',   m:'резать',             g:1, rule:'る(1гр) → って'},
+  // う → って
+  {d:'かう',   t:'かって',   m:'покупать',           g:1, rule:'う → って'},
+  {d:'うたう', t:'うたって', m:'петь',               g:1, rule:'う → って'},
+  {d:'あう',   t:'あって',   m:'встречаться',        g:1, rule:'う → って'},
+  {d:'いう',   t:'いって',   m:'говорить',           g:1, rule:'う → って'},
+  {d:'もらう', t:'もらって', m:'получать',           g:1, rule:'う → って'},
+  // ⚠ special: いく
+  {d:'いく',   t:'いって',   m:'идти / ехать',       g:1, rule:'いく → いって (исключение!)'},
+];
+
+// group 2 (ru-verbs / ichidan)
+const G2 = [
+  {d:'たべる',  t:'たべて',   m:'есть / кушать',     g:2, rule:'る → て'},
+  {d:'みる',    t:'みて',     m:'смотреть',           g:2, rule:'る → て'},
+  {d:'おきる',  t:'おきて',   m:'вставать / просыпаться', g:2, rule:'る → て'},
+  {d:'ねる',    t:'ねて',     m:'спать / ложиться спать', g:2, rule:'る → て'},
+  {d:'いる',    t:'いて',     m:'быть / находиться',  g:2, rule:'る → て'},
+  {d:'でる',    t:'でて',     m:'выходить',           g:2, rule:'る → て'},
+  {d:'きる',    t:'きて',     m:'надевать одежду',    g:2, rule:'る → て'},
+  {d:'しめる',  t:'しめて',   m:'закрывать',          g:2, rule:'る → て'},
+  {d:'あける',  t:'あけて',   m:'открывать',          g:2, rule:'る → て'},
+  {d:'おしえる',t:'おしえて', m:'учить / объяснять',  g:2, rule:'る → て'},
+  {d:'かりる',  t:'かりて',   m:'брать взаймы',       g:2, rule:'る → て'},
+  {d:'つける',  t:'つけて',   m:'включать / прикреплять', g:2, rule:'る → て'},
+  {d:'わすれる',t:'わすれて', m:'забывать',           g:2, rule:'る → て'},
+  {d:'おぼえる',t:'おぼえて', m:'запоминать',         g:2, rule:'る → て'},
+  {d:'はじめる',t:'はじめて', m:'начинать',           g:2, rule:'る → て'},
+  {d:'かんがえる',t:'かんがえて',m:'думать',          g:2, rule:'る → て'},
+  {d:'つかれる',t:'つかれて', m:'устать',             g:2, rule:'る → て'},
+  {d:'しらべる',t:'しらべて', m:'исследовать',        g:2, rule:'る → て'},
+  {d:'みせる',  t:'みせて',   m:'показывать',         g:2, rule:'る → て'},
+  {d:'うける',  t:'うけて',   m:'получать / принимать', g:2, rule:'る → て'},
+];
+
+// group 3 (irregular)
+const G3 = [
+  {d:'する',          t:'して',          m:'делать',        g:3, rule:'する → して'},
+  {d:'くる',          t:'きて',          m:'приходить',     g:3, rule:'くる → きて'},
+  {d:'べんきょうする',t:'べんきょうして', m:'учиться',       g:3, rule:'する → して'},
+  {d:'りょこうする',  t:'りょこうして',  m:'путешествовать', g:3, rule:'する → して'},
+  {d:'そうじする',    t:'そうじして',    m:'убираться',     g:3, rule:'する → して'},
+  {d:'りょうりする',  t:'りょうりして',  m:'готовить еду',  g:3, rule:'する → して'},
+  {d:'うんどうする',  t:'うんどうして',  m:'заниматься спортом', g:3, rule:'する → して'},
+  {d:'でんわする',    t:'でんわして',    m:'звонить по телефону', g:3, rule:'する → して'},
+];
+
+const ALL = [...G1, ...G2, ...G3];
+const allTE = [...new Set(ALL.map(v=>v.t))];
+
+const GROUP_COLORS = {
+  g1: ['#ff8c42','#ffb347'],
+  g2: ['#7c6aff','#ff6f91'],
+  g3: ['#00c9b1','#00a8ff'],
+  all:['#ff6f91','#7c6aff'],
+};
+const GROUP_LABELS = { g1:'1 группа — う-глагол', g2:'2 группа — る-глагол', g3:'3 группа — неправильный', all:'все группы' };
+
+// ─── STATE ───────────────────────────────────────────────────────────────
+let mode='g1', queue=[], qIdx=0, score=0, wrongArr=[], answered=false, totalQ=15;
+
+// ─── UTILS ───────────────────────────────────────────────────────────────
+const shuffle = a => { const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; };
+const showScreen = id => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
+
+// ─── KANA RAIN ───────────────────────────────────────────────────────────
+(()=>{
+  const rain=document.getElementById('teRain');
+  const ch='てっていでんでいてってして';
+  for(let i=0;i<20;i++){
+    const s=document.createElement('span');
+    s.textContent=ch[Math.floor(Math.random()*ch.length)];
+    s.style.cssText=`left:${Math.random()*100}vw;top:${Math.random()*-100}px;font-size:${14+Math.random()*20}px;animation-duration:${9+Math.random()*14}s;animation-delay:${Math.random()*14}s`;
+    rain.appendChild(s);
+  }
+})();
+
+// ─── RULE TOGGLE ─────────────────────────────────────────────────────────
+function toggleRule(el){ el.classList.toggle('open'); }
+
+
+function makeOptions(q){
+
+  if(q.g === 2){
+    const stem = q.d.slice(0, -1);
+
+    return shuffle([
+      q.t,
+      stem + 'って',
+      stem + 'んで',
+      stem + 'して'
+    ]);
+  }
+
+  if(q.g === 3){
+
+    if(q.d.includes('する')){
+      const stem = q.d.replace('する','');
+
+      return shuffle([
+        q.t,
+        stem + 'って',
+        stem + 'んで',
+        stem + 'いて'
+      ]);
+    }
+
+    if(q.d === 'くる'){
+      return shuffle([
+        'きて',
+        'くって',
+        'くんで',
+        'くいて'
+      ]);
+    }
+  }
+
+  const stem = q.d.slice(0,-1);
+
+  const variants = [
+    stem + 'いて',
+    stem + 'いで',
+    stem + 'して',
+    stem + 'んで',
+    stem + 'って'
+  ];
+
+  const wrong = shuffle(
+    variants.filter(v => v !== q.t)
+  ).slice(0,3);
+
+  return shuffle([
+    q.t,
+    ...wrong
+  ]);
+}
+
+
+// ─── QUIZ ─────────────────────────────────────────────────────────────────
+function startQuiz(m){
+  mode=m;
+  const pool = m==='g1'?G1 : m==='g2'?G2 : m==='g3'?G3 : ALL;
+  totalQ = Math.min(m==='g3'?G3.length:15, pool.length);
+  queue = shuffle(pool).slice(0, totalQ);
+  qIdx=0; score=0; wrongArr=[]; answered=false;
+
+  // set gradient colors for progress bar and next btn
+  const [c1,c2]=GROUP_COLORS[m];
+  document.documentElement.style.setProperty('--qc1',c1);
+  document.documentElement.style.setProperty('--qc2',c2);
+
+  showScreen('quiz');
+  renderQ();
+}
+
+function renderQ(){
+  answered=false;
+  const q=queue[qIdx];
+
+  const charEl=document.getElementById('verbChar');
+  charEl.textContent=q.d;
+  charEl.classList.remove('pop'); void charEl.offsetWidth; charEl.classList.add('pop');
+
+  document.getElementById('verbMean').textContent=q.m;
+  document.getElementById('taskSpan').textContent='？';
+
+  // type tag
+  const tag=document.getElementById('typeTag');
+  const colors={1:'var(--g1)',2:'var(--g2)',3:'var(--g3)'};
+  tag.textContent=GROUP_LABELS['g'+q.g]||GROUP_LABELS[mode];
+  tag.style.cssText=`color:${colors[q.g]};border-color:color-mix(in srgb,${colors[q.g]} 30%,transparent);background:color-mix(in srgb,${colors[q.g]} 10%,transparent)`;
+
+  // progress
+  document.getElementById('pNums').textContent=(qIdx+1)+' / '+totalQ;
+  document.getElementById('pFill').style.width=(qIdx/totalQ*100)+'%';
+  document.getElementById('scorePill').textContent=score;
+
+  const opts = makeOptions(q);
+
+  const grid=document.getElementById('optsGrid');
+  grid.innerHTML='';
+  opts.forEach(o=>{
+    const btn=document.createElement('button');
+    btn.className='opt-btn'; btn.textContent=o;
+    btn.onclick=()=>handleAns(btn,o===q.t,q,grid);
+    grid.appendChild(btn);
+  });
+
+  const fb=document.getElementById('fbBox');
+  fb.className='fb-box'; fb.innerHTML='';
+  document.getElementById('nextBtn').className='next-btn';
+}
+
+function handleAns(btn,correct,q,grid){
+  if(answered)return; answered=true;
+  grid.querySelectorAll('.opt-btn').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===q.t&&b!==btn) b.classList.add('reveal');
+  });
+  const fb=document.getElementById('fbBox');
+  document.getElementById('taskSpan').textContent=q.t;
+
+  if(correct){
+    btn.classList.add('correct'); score++;
+    document.getElementById('scorePill').textContent=score;
+    fb.innerHTML=`✓ Правильно! <span style="font-family:'Noto Sans JP'">${q.d} → ${q.t}</span><div class="fb-tip">📝 Правило: ${q.rule}</div>`;
+    fb.className='fb-box show ok';
+  } else {
+    btn.classList.add('wrong');
+    fb.innerHTML=`✗ Ошибка. Правильно: <span style="font-family:'Noto Sans JP'">${q.t}</span><div class="fb-tip">📝 Правило: ${q.rule}</div>`;
+    fb.className='fb-box show no';
+    wrongArr.push(q);
+  }
+  document.getElementById('nextBtn').className='next-btn show';
+}
+
+function nextQ(){ qIdx++; if(qIdx>=totalQ) showResults(); else renderQ(); }
+
+// ─── RESULTS ─────────────────────────────────────────────────────────────
+function showResults(){
+  const acc=Math.round(score/totalQ*100);
+  document.getElementById('rOk').textContent=score;
+  document.getElementById('rBad').textContent=totalQ-score;
+  document.getElementById('rAcc').textContent=acc+'%';
+  document.getElementById('resScore').innerHTML=score+' <span>/ '+totalQ+'</span>';
+
+  const tiers=[
+    {min:93,emoji:'🏆',title:'Идеально!',  msg:'て-форма покорена! Попробуй режим "Все вместе" если ещё не пробовал.'},
+    {min:75,emoji:'🌟',title:'Отлично!',   msg:'Очень хорошо! Чуть-чуть практики с ошибочными глаголами — и будет идеально.'},
+    {min:50,emoji:'💪',title:'Неплохой старт!',msg:'Продолжай! Обрати внимание на правило своей группы в меню.'},
+    {min:0, emoji:'🌱',title:'Продолжай учиться',msg:'Прочти правило ещё раз, попрактикуй по одной группе — и всё получится!'},
+  ];
+  const t=tiers.find(x=>acc>=x.min);
+  document.getElementById('trophy').textContent=t.emoji;
+  document.getElementById('resTitle').textContent=t.title;
+  document.getElementById('resMsg').textContent=t.msg;
+
+  const wl=document.getElementById('wrongList');
+  if(wrongArr.length){
+    const uniq=[...new Map(wrongArr.map(x=>[x.d,x])).values()];
+    wl.innerHTML='<div class="wl-title">Повтори эти глаголы:</div><div class="wl-items">'+
+      uniq.map(v=>`<div class="wl-item"><span class="wi-d">${v.d}</span><span class="wi-a">→</span><span class="wi-t">${v.t}</span><span class="wi-m">${v.m}</span></div>`).join('')+'</div>';
+  } else { wl.innerHTML=''; }
+
+  showScreen('results');
+}
+
+function retryQuiz(){ startQuiz(mode); }
+function goMenu(){ showScreen('menu'); }
+</script>
+</body>
+</html>
